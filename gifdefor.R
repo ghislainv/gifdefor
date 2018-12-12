@@ -232,4 +232,77 @@ p <- ggplot(NULL, aes(X, Y)) +
 print(p)
 ggsave("output/for2000_shade_ggplot.pdf", p)
 
+# ================================================
+# Projections
+# ================================================
+
+# Set region resolution
+execGRASS("g.region", flags=c("a","p"), res="1000")
+
+# Import prob
+pars <- list(input="gisdata/raster/projections/prob_icar.tif",
+						 output="prob_icar")
+execGRASS("r.in.gdal", flags=c("overwrite"), parameters=pars)
+
+# Combined raster with no forest
+expr <- glue("prob_icar_c = if(!isnull(prob_icar), prob_icar, \\
+             if(!isnull(mada), 0, null()))")
+execGRASS("r.mapcalc", flags=c("overwrite"), expression=expr)
+
+# Color palette
+col0 <- "0 208:208:208"
+col1 <- "1 74:129:46"
+col2 <- "39322 255:165:0"
+col3 <- "52429 255:0:0"
+col4 <- "65534 0:0:0"
+colnv <- "nv 255:255:255"
+fileConn <- file("gisdata/color_rules2.txt")
+writeLines(c(col0,col1,col2,col3,col4,colnv), fileConn)
+close(fileConn)
+
+# Set color
+execGRASS("r.colors", map="prob_icar_c",
+					rules="gisdata/color_rules2.txt")
+
+# Export to png
+execGRASS("g.region", flags=c("a","p"), res="1000")
+execGRASS("r.out.png", flags="overwrite",
+					input=glue("prob_icar_c"), output=glue("output/prob_icar_c.png"))
+execGRASS("g.region", flags=c("a","p"), raster="for2000")
+
+# Import proj_2050
+pars <- list(input="gisdata/raster/projections/proj2050_icar.tif",
+						 output="proj2050_icar")
+execGRASS("r.in.gdal", flags=c("overwrite"), parameters=pars)
+
+# Combined raster with water, deforestation and no forest
+expr <- glue("proj2050_icar_c = if(proj2050_icar==1 &&& !isnull(proj2050_icar), 1, \\
+             if(proj2050_icar==0 &&& !isnull(proj2050_icar), 3, \\
+						 if(!isnull(water) &&& !isnull(mada) &&& water>0, 2, \\
+						 if(!isnull(mada), 0, \\
+						 null()))))")
+execGRASS("r.mapcalc", flags=c("overwrite"), expression=expr)
+
+# Color palette
+col0 <- "0 208:208:208"
+col1 <- "1 74:129:46"
+col2 <- "2 42:106:214"
+col3 <- "3 245:10:10"
+colnv <- "nv 255:255:255"
+fileConn <- file("gisdata/color_rules3.txt")
+writeLines(c(col0,col1,col2,col3,colnv), fileConn)
+close(fileConn)
+
+# Set color
+execGRASS("r.colors", map="proj2050_icar_c",
+					rules="gisdata/color_rules3.txt")
+
+# Export to png
+execGRASS("r.out.png", flags="overwrite",
+					input=glue("proj2050_icar_c"),
+					output=glue("output/proj2050_icar_c.png"))
+
+# Reset region
+# execGRASS("g.region", flags=c("a","p"), raster="for2000")
+
 # End
