@@ -233,6 +233,42 @@ print(p)
 ggsave("output/for2000_shade_ggplot.pdf", p)
 
 # ================================================
+# Hillshade with elevation
+# ================================================
+
+require(raster)
+require(ggplot2)
+
+# Load rasters
+elev <- raster("gisdata/raster/elevation/elevation.tif")
+elev2 <- aggregate(elev,10,mean)
+hill <- raster("output/relief.tif")
+
+#	Convert rasters to dataframes for plotting with ggplot
+hdf <- rasterToPoints(hill); hdf <- data.frame(hdf)
+colnames(hdf) <- c("X","Y","Hill")
+ddf <- rasterToPoints(elev); ddf <- data.frame(ddf)
+colnames(ddf) <- c("X","Y","For")
+
+# Colors
+col0 <- "#d0d0d0" # 208 208 208
+col1 <- "#4a812e" # 74 129 46
+col2 <- "#2a6ad6" # 42 106 214
+
+#	Plot hillShade layer with ggplot()
+p <- ggplot(NULL, aes(X, Y)) +
+	geom_raster(data=ddf, aes(fill=factor(For))) +
+	scale_fill_manual(values=c(col0,col1,col2),
+										na.value="transparent", guide="none") +
+	geom_raster(data=hdf,aes(alpha=Hill)) +
+	scale_alpha(range=c(0,0.7), guide="none") +
+	theme_minimal() +
+	coord_equal()
+print(p)
+ggsave("output/for2000_shade_ggplot.pdf", p)
+
+
+# ================================================
 # Projections
 # ================================================
 
